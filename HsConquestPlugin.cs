@@ -43,6 +43,13 @@ namespace HsConquest
         // after a concede) can cancel the in-flight poll before starting a
         // fresh one.
         private DispatcherTimer _classPollTimer;
+        // True between OnGameStart (first fire) and OnGameEnd. HDT sometimes
+        // fires OnGameStart multiple times during a single match (around
+        // mulligan completion, opponent reveal, etc.) — repopulating the
+        // overlay dropdowns on those re-fires wipes the user's archetype
+        // selections. Gate the populate-and-show logic on this flag so each
+        // match gets exactly one populate.
+        private bool _gameInProgress;
 
         public void OnLoad()
         {
@@ -95,6 +102,19 @@ namespace HsConquest
 
         private void OnGameStart()
         {
+            // Drop re-fires: HDT will fire OnGameStart multiple times during
+            // a single match (around mulligan completion etc.), and we don't
+            // want to clobber the user's archetype picks each time. First
+            // game-start fire takes responsibility for the whole match;
+            // subsequent ones until OnGameEnd are ignored.
+            if (_gameInProgress)
+            {
+                Hearthstone_Deck_Tracker.Utility.Logging.Log.Info(
+                    "[HsConquest] OnGameStart re-fire ignored (still in-progress).");
+                return;
+            }
+            _gameInProgress = true;
+
             // HDT fires OnGameStart *before* the hero entities are placed on
             // the board — at that moment Player.OriginalClass and
             // Opponent.OriginalClass both return empty strings. So we kick
@@ -164,6 +184,7 @@ namespace HsConquest
             {
                 _classPollTimer?.Stop();
                 _classPollTimer = null;
+                _gameInProgress = false; // ready for next OnGameStart
                 _overlay?.HideForEnd();
             }
             catch { }
