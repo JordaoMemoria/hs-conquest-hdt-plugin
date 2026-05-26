@@ -76,31 +76,19 @@ namespace HsConquest
         {
             try
             {
-                // OriginalClass = the class the player chose at game start.
-                // Player.Class was deprecated in favour of OriginalClass /
-                // CurrentClass; we want "what archetype is being played",
-                // which is OriginalClass (CurrentClass would drift mid-game
-                // for Shudderwock-style class-changing effects).
+                // OriginalClass = the class chosen at deck-build time, not
+                // whatever the current hero might be (matters for shudderwock-
+                // style class swaps). Use OriginalClass for both sides so the
+                // overlay's dropdowns are filtered to the correct archetype
+                // pool.
+                var myClass  = Hearthstone_Deck_Tracker.Core.Game.Player.OriginalClass ?? "";
                 var oppClass = Hearthstone_Deck_Tracker.Core.Game.Opponent.OriginalClass ?? "";
 
-                // The "user's currently active deck" lives on the global
-                // DeckList singleton, not on the Player game state. (Player.
-                // OriginalDeck doesn't exist on current HDT.)
-                var myDeckName = Hearthstone_Deck_Tracker.DeckList.Instance.ActiveDeck?.Name
-                                 ?? Hearthstone_Deck_Tracker.Core.Game.Player.OriginalClass
-                                 ?? "";
-
-                // Look up the user's archetype mapping for this HDT deck name.
-                _settings.DeckToArchetype.TryGetValue(myDeckName, out var myArchetype);
-                if (string.IsNullOrEmpty(myArchetype))
-                {
-                    // No mapping yet — overlay will tell the user to set one in
-                    // the settings panel.
-                    _overlay.ShowUnmapped(myDeckName, oppClass);
-                    return;
-                }
-
-                _overlay.ShowForGame(_matrixClient, myArchetype, oppClass);
+                // No deck-mapping step: the user picks both their own
+                // archetype and the opponent's from the overlay dropdowns
+                // in-game. The plugin just supplies the matrix and the
+                // class filters.
+                _overlay.ShowForGame(_matrixClient, myClass, oppClass);
             }
             catch (Exception ex)
             {

@@ -12,44 +12,43 @@
         WindowStartupLocation="Manual"
         Left="40" Top="120">
     <!--
-        Borderless, transparent, always-on-top window. We position it at
-        (40, 120) of the desktop by default — the user can hand-edit
-        settings.json to tweak. For V1 we don't auto-position over the
-        Hearthstone window; that's a future iteration.
-
-        The visible content is a rounded card with a subtle drop-shadow.
+        Borderless, transparent, always-on-top window. Positioned at
+        (40, 120) of the desktop by default. Two dropdowns: the user picks
+        their own archetype + the opponent's archetype in-game; WR
+        appears below both once they're set.
     -->
     <Border CornerRadius="10" Background="#FAFAFCEC" BorderBrush="#CFD3DA" BorderThickness="1" Padding="14,12">
         <Border.Effect>
             <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.18"/>
         </Border.Effect>
-        <StackPanel MinWidth="240">
-            <!-- Header: opponent class -->
+        <StackPanel MinWidth="280">
+            <!-- Header: classes for both sides -->
             <TextBlock x:Name="HeaderText"
                        FontSize="11" Foreground="#555866" FontWeight="SemiBold"
                        TextAlignment="Center"
-                       Text="vs ?"/>
+                       Text="? vs ?"/>
 
-            <!-- Opponent archetype dropdown -->
-            <ComboBox x:Name="ArchetypeBox" Margin="0,8,0,0"
+            <!-- My-deck dropdown -->
+            <TextBlock Margin="0,8,0,2" FontSize="11" Foreground="#555866" Text="My deck"/>
+            <ComboBox x:Name="MyArchetypeBox"
                       IsEditable="False"
-                      SelectionChanged="OnArchetypeChanged"/>
+                      SelectionChanged="OnSelectionChanged"/>
 
-            <!-- WR display (initially empty until user picks) -->
+            <!-- Opponent-deck dropdown -->
+            <TextBlock Margin="0,6,0,2" FontSize="11" Foreground="#555866" Text="Opponent's deck"/>
+            <ComboBox x:Name="OppArchetypeBox"
+                      IsEditable="False"
+                      SelectionChanged="OnSelectionChanged"/>
+
+            <!-- WR display (initially empty until both selected) -->
             <TextBlock x:Name="WrText"
-                       Margin="0,10,0,0" FontSize="32" FontWeight="Bold"
+                       Margin="0,12,0,0" FontSize="32" FontWeight="Bold"
                        TextAlignment="Center"
                        Foreground="#1A1D28"
                        Text=""/>
             <TextBlock x:Name="WrSubText"
                        FontSize="11" Foreground="#555866"
                        TextAlignment="Center"
-                       Text=""/>
-
-            <!-- Tiny footer link to open settings (low-key) -->
-            <TextBlock Margin="0,8,0,0" FontSize="10" Foreground="#888"
-                       TextAlignment="Center"
-                       x:Name="FooterText"
                        Text=""/>
         </StackPanel>
     </Border>

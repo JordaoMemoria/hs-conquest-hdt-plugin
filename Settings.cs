@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 
@@ -9,24 +8,15 @@ namespace HsConquest
     /// Plugin configuration persisted to
     /// %AppData%/HearthstoneDeckTracker/Plugins/HsConquest/settings.json.
     ///
-    /// Two fields:
-    ///   - SyncUrl: the URL the user got from clicking "Sync to plugin" on
-    ///     Tab 4 of hsconquest.netlify.app. The plugin GETs this URL to
-    ///     pull the latest matchup matrix.
-    ///   - DeckToArchetype: maps the user's HDT deck names (free-form
-    ///     strings the user picked when they imported their deck into HDT)
-    ///     to the archetype name as it appears in the matrix (e.g. "Aggro
-    ///     Druid"). The user fills this in once via the settings panel.
-    ///
-    /// JSON file is human-readable so the user can hand-edit it if they
-    /// rename a deck and don't want to re-open the settings UI.
+    /// Single field for V1: the sync URL the user pasted from Tab 4 of
+    /// hsconquest.netlify.app. The plugin GETs this URL to pull the
+    /// latest matchup matrix. The user picks both their own and the
+    /// opponent's archetype in-game from the overlay, so we don't need
+    /// any per-deck mapping here.
     /// </summary>
     public class Settings
     {
         public string SyncUrl { get; set; } = "";
-
-        public Dictionary<string, string> DeckToArchetype { get; set; }
-            = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         // ---- Disk persistence ----
 

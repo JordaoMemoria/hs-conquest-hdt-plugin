@@ -2,13 +2,12 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="HS Conquest Helper — Settings"
-        Width="600" Height="540"
+        Width="560" Height="280"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         FontSize="13">
     <Grid Margin="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -22,13 +21,14 @@
             HS Conquest Helper
         </TextBlock>
         <TextBlock Grid.Row="1" Foreground="#555" TextWrapping="Wrap" Margin="0,0,0,16">
-            Paste your Tab-4 sync URL from hsconquest.netlify.app, then tag
-            each of your HDT decks with the archetype name it uses in the matrix.
+            Paste your Tab-4 sync URL from hsconquest.netlify.app and click
+            Reload matrix. That's it — pick both archetypes in-game from the
+            overlay; no per-deck mapping needed.
         </TextBlock>
 
         <!-- Sync URL row -->
         <TextBlock Grid.Row="2" FontWeight="Bold" Margin="0,0,0,4">Sync URL</TextBlock>
-        <Grid Grid.Row="3" Margin="0,0,0,16">
+        <Grid Grid.Row="3" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -42,37 +42,11 @@
                        VerticalAlignment="Center" Foreground="#555"/>
         </Grid>
 
-        <!-- Decks → archetype heading -->
-        <TextBlock Grid.Row="4" FontWeight="Bold" Margin="0,0,0,4">
-            Your HDT decks → matrix archetype
-        </TextBlock>
-
-        <!-- Decks list. ItemsControl is just a non-virtualized stack of rows;
-             each row shows the deck name and a ComboBox of matrix archetypes. -->
-        <ScrollViewer Grid.Row="5" VerticalScrollBarVisibility="Auto"
-                      Background="#FAFAFA" Padding="8" BorderBrush="#E0E0E0" BorderThickness="1">
-            <ItemsControl x:Name="DecksItemsControl">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Margin="0,4">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="280"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{Binding DeckName}"
-                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <ComboBox Grid.Column="1"
-                                      ItemsSource="{Binding ArchetypeOptions}"
-                                      SelectedItem="{Binding SelectedArchetype, Mode=TwoWay}"
-                                      IsEditable="False"/>
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <!-- Spacer (was the deck-mapping list — now removed) -->
+        <Border Grid.Row="4"/>
 
         <!-- Save / Cancel -->
-        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button x:Name="CancelButton" Padding="14,6" Margin="0,0,8,0"
                     Content="Cancel" Click="OnCancelClick"/>
             <Button x:Name="SaveButton" Padding="14,6"

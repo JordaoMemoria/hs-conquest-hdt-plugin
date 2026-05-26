@@ -8,21 +8,19 @@ using HsConquest.Matrix;
 namespace HsConquest.UI
 {
     /// <summary>
-    /// Small always-on-top overlay shown during a game. Displays the
-    /// opponent's class + a dropdown of archetypes for that class; when
-    /// the user picks one, shows the matchup WR for their own deck vs
-    /// that archetype.
+    /// In-game overlay. Two dropdowns:
+    ///   - "My deck": archetypes filtered to the player's class
+    ///   - "Opponent's deck": archetypes filtered to the opponent's class
+    /// Once both are picked, the WR for that matchup is displayed.
     ///
-    /// Three visible states:
-    ///   - "vs &lt;Class&gt;" + dropdown + (empty WR area) — waiting for user pick.
-    ///   - "vs &lt;Class&gt;" + dropdown + "XX.X%" + "N games" — user picked.
-    ///   - "Set up your deck mapping" — the user's HDT deck has no
-    ///     archetype mapping in settings yet.
+    /// HDT auto-detects both classes at game start and we pre-filter the
+    /// dropdowns to relevant archetypes for each side. The user picks both
+    /// per match — no deck-name mapping in settings required.
     /// </summary>
     public partial class MatchupOverlay : Window
     {
+        private const string PlaceholderText = "— select —";
         private MatrixClient _client;
-        private string _myArchetype;
 
         public MatchupOverlay()
         {
@@ -30,49 +28,23 @@ namespace HsConquest.UI
         }
 
         /// <summary>
-        /// Configure the overlay for a fresh game. Populates the dropdown
-        /// with the opponent class's archetypes; WR stays blank until the
-        /// user picks one.
+        /// Configure the overlay for a fresh game. Populates both dropdowns
+        /// with archetypes for each side's detected class; WR stays blank
+        /// until the user picks an archetype on each side.
         /// </summary>
-        public void ShowForGame(MatrixClient client, string myArchetype, string opponentClass)
+        public void ShowForGame(MatrixClient client, string playerClass, string opponentClass)
         {
             _client = client;
-            _myArchetype = myArchetype;
+            HeaderText.Text = $"{Capitalize(playerClass)} vs {Capitalize(opponentClass)}";
 
-            HeaderText.Text   = $"vs {Capitalize(opponentClass)} — pick archetype";
-            WrText.Text       = "";
-            WrSubText.Text    = "";
-            FooterText.Text   = $"My deck: {myArchetype}";
+            PopulateDropdown(MyArchetypeBox,  client?.ArchetypesForClass(playerClass));
+            PopulateDropdown(OppArchetypeBox, client?.ArchetypesForClass(opponentClass));
 
-            // Populate dropdown.
-            var archetypes = (client?.ArchetypesForClass(opponentClass) ?? new List<string>()).ToList();
-            // Insert a placeholder so the dropdown starts unselected.
-            archetypes.Insert(0, "— select —");
-            ArchetypeBox.ItemsSource = archetypes;
-            ArchetypeBox.SelectedIndex = 0;
+            WrText.Text    = "";
+            WrSubText.Text = client?.HasMatrix == true
+                ? ""
+                : "No matrix loaded — paste URL in plugin Settings.";
 
-            if (archetypes.Count <= 1)
-            {
-                HeaderText.Text = $"vs {Capitalize(opponentClass)}";
-                WrSubText.Text = "No matrix data yet. Reload in settings.";
-            }
-
-            ShowIfNotVisible();
-        }
-
-        /// <summary>
-        /// Render an "unmapped deck" state: HDT picked up the user's deck
-        /// but they haven't tagged it with an archetype yet.
-        /// </summary>
-        public void ShowUnmapped(string deckName, string opponentClass)
-        {
-            HeaderText.Text   = $"vs {Capitalize(opponentClass)}";
-            ArchetypeBox.ItemsSource = new[] { "(no deck mapping)" };
-            ArchetypeBox.SelectedIndex = 0;
-            ArchetypeBox.IsEnabled = false;
-            WrText.Text       = "?";
-            WrSubText.Text    = $"Tag '{deckName}' with an archetype";
-            FooterText.Text   = "Open Settings in HDT plugin manager";
             ShowIfNotVisible();
         }
 
@@ -81,16 +53,37 @@ namespace HsConquest.UI
 
         // ---- Internal ----
 
-        private void OnArchetypeChanged(object sender, SelectionChangedEventArgs e)
+        private static void PopulateDropdown(ComboBox box, IEnumerable<string> options)
         {
-            var opp = ArchetypeBox.SelectedItem as string;
-            if (string.IsNullOrEmpty(opp) || opp == "— select —")
+            // Always start with a placeholder so the box reads "— select —"
+            // until the user makes a real choice. If the class has no
+            // archetypes in the matrix slice (e.g. very-low-popularity
+            // class hidden by sample threshold), the placeholder is the
+            // only entry — the user can't pick anything, which is
+            // expected. We don't bypass-disable here because the user
+            // might still want to manually type or look at it.
+            var list = new List<string> { PlaceholderText };
+            if (options != null) list.AddRange(options);
+            box.ItemsSource    = list;
+            box.SelectedIndex  = 0;
+        }
+
+        private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var mine = MyArchetypeBox.SelectedItem as string;
+            var opp  = OppArchetypeBox.SelectedItem as string;
+            var minePicked = !string.IsNullOrEmpty(mine) && mine != PlaceholderText;
+            var oppPicked  = !string.IsNullOrEmpty(opp)  && opp  != PlaceholderText;
+
+            if (!minePicked || !oppPicked)
             {
                 WrText.Text    = "";
-                WrSubText.Text = "";
+                WrSubText.Text = _client?.HasMatrix == true
+                    ? "Pick both archetypes to see WR."
+                    : "No matrix loaded — paste URL in plugin Settings.";
                 return;
             }
-            var cell = _client?.Lookup(_myArchetype, opp);
+            var cell = _client?.Lookup(mine, opp);
             if (cell == null || cell.Games <= 0)
             {
                 WrText.Text       = "?";
