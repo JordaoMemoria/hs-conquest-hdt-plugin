@@ -1,5 +1,8 @@
 using System;
+using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Hearthstone_Deck_Tracker.Plugins;
 using Hearthstone_Deck_Tracker.API;
 using HsConquest.Matrix;
@@ -35,6 +38,11 @@ namespace HsConquest
         private Settings _settings;
         private MatrixClient _matrixClient;
         private MatchupOverlay _overlay;
+        // Polling timer for the post-OnGameStart "wait for classes" loop.
+        // Kept as a field so a re-entrant OnGameStart (e.g. fast restart
+        // after a concede) can cancel the in-flight poll before starting a
+        // fresh one.
+        private DispatcherTimer _classPollTimer;
 
         public void OnLoad()
         {
@@ -53,7 +61,13 @@ namespace HsConquest
 
         public void OnUnload()
         {
-            try { _overlay?.Hide(); } catch { /* HDT shutdown is best-effort */ }
+            try
+            {
+                _classPollTimer?.Stop();
+                _classPollTimer = null;
+                _overlay?.Hide();
+            }
+            catch { /* HDT shutdown is best-effort */ }
             _overlay = null;
         }
 
@@ -72,48 +86,87 @@ namespace HsConquest
 
         public void OnUpdate() { /* called per frame — we don't need it */ }
 
+        // Poll interval + max retries for the "wait for HDT to populate class"
+        // loop. 500ms × 20 = 10s upper bound. Empirically the classes are
+        // ready within 1-3 seconds of OnGameStart; the cap is just a safety
+        // net so we don't poll forever on a borked game state.
+        private const int ClassPollIntervalMs = 500;
+        private const int ClassPollMaxAttempts = 20;
+
         private void OnGameStart()
         {
+            // HDT fires OnGameStart *before* the hero entities are placed on
+            // the board — at that moment Player.OriginalClass and
+            // Opponent.OriginalClass both return empty strings. So we kick
+            // off a short polling loop and only show the overlay once both
+            // classes are populated. (Confirmed empirically: logs showed
+            // myClass='' oppClass='' at OnGameStart.)
             try
             {
-                // OriginalClass = the class chosen at deck-build time, not
-                // whatever the current hero might be (matters for shudderwock-
-                // style class swaps). Use OriginalClass for both sides so the
-                // overlay's dropdowns are filtered to the correct archetype
-                // pool.
-                var myClass  = Hearthstone_Deck_Tracker.Core.Game.Player.OriginalClass ?? "";
-                var oppClass = Hearthstone_Deck_Tracker.Core.Game.Opponent.OriginalClass ?? "";
+                _classPollTimer?.Stop();
+                _classPollTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(ClassPollIntervalMs),
+                };
+                int attempts = 0;
+                _classPollTimer.Tick += (sender, args) =>
+                {
+                    attempts++;
+                    try
+                    {
+                        var myClass  = Hearthstone_Deck_Tracker.Core.Game.Player.OriginalClass ?? "";
+                        var oppClass = Hearthstone_Deck_Tracker.Core.Game.Opponent.OriginalClass ?? "";
+                        var bothKnown = !string.IsNullOrEmpty(myClass) && !string.IsNullOrEmpty(oppClass);
+                        var timedOut  = attempts >= ClassPollMaxAttempts;
+                        if (!bothKnown && !timedOut) return; // try again next tick
 
-                // Diagnostic logging — surfaces in %AppData%/HearthstoneDeckTracker/hdt_log.txt.
-                // Tells us at a glance: what classes HDT reported, whether the
-                // matrix is loaded, and how many archetypes the filter found
-                // for each side. Empty counts = either the classes don't match
-                // any matrix entries or the matrix didn't fetch.
-                var matrixState = _matrixClient.HasMatrix
-                    ? $"matrix has {_matrixClient.Cached.Rows.Count} rows / {_matrixClient.Cached.Cols.Count} cols"
-                    : "matrix NOT loaded";
-                var myCount  = System.Linq.Enumerable.Count(_matrixClient.ArchetypesForClass(myClass));
-                var oppCount = System.Linq.Enumerable.Count(_matrixClient.ArchetypesForClass(oppClass));
+                        // Stop the timer first so we don't re-enter.
+                        _classPollTimer.Stop();
+                        _classPollTimer = null;
+
+                        // One-line diagnostic for the log — tells us at a
+                        // glance whether the classes resolved before timeout
+                        // and how many archetypes the filter found on each side.
+                        var matrixState = _matrixClient.HasMatrix
+                            ? $"matrix has {_matrixClient.Cached.Rows.Count} rows / {_matrixClient.Cached.Cols.Count} cols"
+                            : "matrix NOT loaded";
+                        var myCount  = _matrixClient.ArchetypesForClass(myClass).Count();
+                        var oppCount = _matrixClient.ArchetypesForClass(oppClass).Count();
+                        Hearthstone_Deck_Tracker.Utility.Logging.Log.Info(
+                            $"[HsConquest] Classes ready after {attempts * ClassPollIntervalMs}ms: " +
+                            $"my='{myClass}' opp='{oppClass}' {matrixState}; " +
+                            $"archetypes: my={myCount} opp={oppCount} " +
+                            (bothKnown ? "OK" : "TIMED OUT"));
+
+                        _overlay.ShowForGame(_matrixClient, myClass, oppClass);
+                    }
+                    catch (Exception ex)
+                    {
+                        _classPollTimer?.Stop();
+                        _classPollTimer = null;
+                        Hearthstone_Deck_Tracker.Utility.Logging.Log.Error(
+                            $"[HsConquest] class-poll tick failed: {ex}");
+                    }
+                };
+                _classPollTimer.Start();
                 Hearthstone_Deck_Tracker.Utility.Logging.Log.Info(
-                    $"[HsConquest] OnGameStart myClass='{myClass}' oppClass='{oppClass}' " +
-                    $"{matrixState}; archetypes: my={myCount} opp={oppCount}");
-
-                // No deck-mapping step: the user picks both their own
-                // archetype and the opponent's from the overlay dropdowns
-                // in-game. The plugin just supplies the matrix and the
-                // class filters.
-                _overlay.ShowForGame(_matrixClient, myClass, oppClass);
+                    "[HsConquest] OnGameStart fired — polling for hero classes...");
             }
             catch (Exception ex)
             {
-                // Never crash HDT because of plugin code.
                 Hearthstone_Deck_Tracker.Utility.Logging.Log.Error($"[HsConquest] OnGameStart failed: {ex}");
             }
         }
 
         private void OnGameEnd()
         {
-            try { _overlay?.HideForEnd(); } catch { }
+            try
+            {
+                _classPollTimer?.Stop();
+                _classPollTimer = null;
+                _overlay?.HideForEnd();
+            }
+            catch { }
         }
     }
 }
