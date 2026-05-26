@@ -26,6 +26,8 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <!-- HDT is x86; matching here avoids the MSB3270 architecture-mismatch warning. -->
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
 
   <!--

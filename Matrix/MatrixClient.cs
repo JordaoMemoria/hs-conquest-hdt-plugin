@@ -65,7 +65,7 @@ namespace HsConquest.Matrix
             catch (Exception ex)
             {
                 // Log but don't bubble — overlay falls back to "no data".
-                Hearthstone_Deck_Tracker.Logging.Log.Error($"[HsConquest] Matrix fetch failed: {ex.Message}");
+                Hearthstone_Deck_Tracker.Utility.Logging.Log.Error($"[HsConquest] Matrix fetch failed: {ex.Message}");
                 return null;
             }
         }

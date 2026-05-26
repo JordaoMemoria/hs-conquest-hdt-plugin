@@ -51,7 +51,7 @@
              each row shows the deck name and a ComboBox of matrix archetypes. -->
         <ScrollViewer Grid.Row="5" VerticalScrollBarVisibility="Auto"
                       Background="#FAFAFA" Padding="8" BorderBrush="#E0E0E0" BorderThickness="1">
-            <ItemsControl x:Name="DeckList">
+            <ItemsControl x:Name="DecksItemsControl">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Grid Margin="0,4">

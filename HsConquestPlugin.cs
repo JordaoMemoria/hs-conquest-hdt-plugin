@@ -76,9 +76,18 @@ namespace HsConquest
         {
             try
             {
-                var oppClass = Hearthstone_Deck_Tracker.Core.Game.Opponent.Class ?? "";
-                var myDeckName = Hearthstone_Deck_Tracker.Core.Game.Player.OriginalDeck?.Name
-                                 ?? Hearthstone_Deck_Tracker.Core.Game.Player.Class
+                // OriginalClass = the class the player chose at game start.
+                // Player.Class was deprecated in favour of OriginalClass /
+                // CurrentClass; we want "what archetype is being played",
+                // which is OriginalClass (CurrentClass would drift mid-game
+                // for Shudderwock-style class-changing effects).
+                var oppClass = Hearthstone_Deck_Tracker.Core.Game.Opponent.OriginalClass ?? "";
+
+                // The "user's currently active deck" lives on the global
+                // DeckList singleton, not on the Player game state. (Player.
+                // OriginalDeck doesn't exist on current HDT.)
+                var myDeckName = Hearthstone_Deck_Tracker.DeckList.Instance.ActiveDeck?.Name
+                                 ?? Hearthstone_Deck_Tracker.Core.Game.Player.OriginalClass
                                  ?? "";
 
                 // Look up the user's archetype mapping for this HDT deck name.
@@ -96,7 +105,7 @@ namespace HsConquest
             catch (Exception ex)
             {
                 // Never crash HDT because of plugin code.
-                Hearthstone_Deck_Tracker.Logging.Log.Error($"[HsConquest] OnGameStart failed: {ex}");
+                Hearthstone_Deck_Tracker.Utility.Logging.Log.Error($"[HsConquest] OnGameStart failed: {ex}");
             }
         }
 

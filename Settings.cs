@@ -52,7 +52,7 @@ namespace HsConquest
             catch (Exception ex)
             {
                 // Corrupt settings file shouldn't kill the plugin — log + start fresh.
-                Hearthstone_Deck_Tracker.Logging.Log.Error($"[HsConquest] Failed to load settings: {ex}");
+                Hearthstone_Deck_Tracker.Utility.Logging.Log.Error($"[HsConquest] Failed to load settings: {ex}");
                 return new Settings();
             }
         }
@@ -66,7 +66,7 @@ namespace HsConquest
             }
             catch (Exception ex)
             {
-                Hearthstone_Deck_Tracker.Logging.Log.Error($"[HsConquest] Failed to save settings: {ex}");
+                Hearthstone_Deck_Tracker.Utility.Logging.Log.Error($"[HsConquest] Failed to save settings: {ex}");
             }
         }
     }

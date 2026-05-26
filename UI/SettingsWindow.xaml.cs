@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using Hearthstone_Deck_Tracker;
 using HsConquest.Matrix;
+// Note: the XAML control formerly named "DeckList" is now "DecksItemsControl"
+// to avoid a name collision with Hearthstone_Deck_Tracker.DeckList (the
+// static class we look up the user's HDT decks on).
 
 namespace HsConquest.UI
 {
@@ -121,7 +124,7 @@ namespace HsConquest.UI
                 });
             }
 
-            DeckList.ItemsSource = _rows;
+            DecksItemsControl.ItemsSource = _rows;
         }
 
         /// <summary>One row in the deck-mapping list, two-way bound to a ComboBox.</summary>
