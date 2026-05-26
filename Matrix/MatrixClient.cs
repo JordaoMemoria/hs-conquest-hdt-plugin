@@ -122,26 +122,25 @@ namespace HsConquest.Matrix
     /// </summary>
     internal static class ClassNormalizer
     {
+        /// <summary>
+        /// Map any plausible HDT class representation to the lowercase
+        /// one-word slug used in the matrix ("deathknight",
+        /// "demonhunter", etc.). Handles uppercase ("MAGE"), spaces
+        /// ("Death Knight"), underscores ("DEATH_KNIGHT"), hyphens
+        /// ("death-knight"), and any combination thereof.
+        /// </summary>
         public static string Normalize(string raw)
         {
             if (string.IsNullOrEmpty(raw)) return "";
-            var s = raw.Trim().ToLowerInvariant().Replace(" ", "");
-            // Common HDT enum values → matrix slugs (most pass through, a few need explicit mapping)
-            switch (s)
+            // Strip all non-letters then lowercase — collapses MAGE, Mage,
+            // Death Knight, DEATH_KNIGHT, death-knight all into the same
+            // slug. Cheap and robust against future HDT formatting changes.
+            var sb = new System.Text.StringBuilder(raw.Length);
+            foreach (var c in raw)
             {
-                case "deathknight":  return "deathknight";
-                case "demonhunter":  return "demonhunter";
-                case "druid":        return "druid";
-                case "hunter":       return "hunter";
-                case "mage":         return "mage";
-                case "paladin":      return "paladin";
-                case "priest":       return "priest";
-                case "rogue":        return "rogue";
-                case "shaman":       return "shaman";
-                case "warlock":      return "warlock";
-                case "warrior":      return "warrior";
-                default:             return s; // pass-through for unknown/new classes
+                if (char.IsLetter(c)) sb.Append(char.ToLowerInvariant(c));
             }
+            return sb.ToString();
         }
     }
 }

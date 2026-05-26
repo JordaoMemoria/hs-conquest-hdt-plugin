@@ -84,6 +84,20 @@ namespace HsConquest
                 var myClass  = Hearthstone_Deck_Tracker.Core.Game.Player.OriginalClass ?? "";
                 var oppClass = Hearthstone_Deck_Tracker.Core.Game.Opponent.OriginalClass ?? "";
 
+                // Diagnostic logging — surfaces in %AppData%/HearthstoneDeckTracker/hdt_log.txt.
+                // Tells us at a glance: what classes HDT reported, whether the
+                // matrix is loaded, and how many archetypes the filter found
+                // for each side. Empty counts = either the classes don't match
+                // any matrix entries or the matrix didn't fetch.
+                var matrixState = _matrixClient.HasMatrix
+                    ? $"matrix has {_matrixClient.Cached.Rows.Count} rows / {_matrixClient.Cached.Cols.Count} cols"
+                    : "matrix NOT loaded";
+                var myCount  = System.Linq.Enumerable.Count(_matrixClient.ArchetypesForClass(myClass));
+                var oppCount = System.Linq.Enumerable.Count(_matrixClient.ArchetypesForClass(oppClass));
+                Hearthstone_Deck_Tracker.Utility.Logging.Log.Info(
+                    $"[HsConquest] OnGameStart myClass='{myClass}' oppClass='{oppClass}' " +
+                    $"{matrixState}; archetypes: my={myCount} opp={oppCount}");
+
                 // No deck-mapping step: the user picks both their own
                 // archetype and the opponent's from the overlay dropdowns
                 // in-game. The plugin just supplies the matrix and the
