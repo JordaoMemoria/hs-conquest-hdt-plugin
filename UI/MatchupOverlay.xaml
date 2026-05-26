@@ -1,0 +1,56 @@
+<Window x:Class="HsConquest.UI.MatchupOverlay"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="HS Conquest"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        Topmost="True"
+        ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual"
+        Left="40" Top="120">
+    <!--
+        Borderless, transparent, always-on-top window. We position it at
+        (40, 120) of the desktop by default — the user can hand-edit
+        settings.json to tweak. For V1 we don't auto-position over the
+        Hearthstone window; that's a future iteration.
+
+        The visible content is a rounded card with a subtle drop-shadow.
+    -->
+    <Border CornerRadius="10" Background="#FAFAFCEC" BorderBrush="#CFD3DA" BorderThickness="1" Padding="14,12">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.18"/>
+        </Border.Effect>
+        <StackPanel MinWidth="240">
+            <!-- Header: opponent class -->
+            <TextBlock x:Name="HeaderText"
+                       FontSize="11" Foreground="#555866" FontWeight="SemiBold"
+                       TextAlignment="Center"
+                       Text="vs ?"/>
+
+            <!-- Opponent archetype dropdown -->
+            <ComboBox x:Name="ArchetypeBox" Margin="0,8,0,0"
+                      IsEditable="False"
+                      SelectionChanged="OnArchetypeChanged"/>
+
+            <!-- WR display (initially empty until user picks) -->
+            <TextBlock x:Name="WrText"
+                       Margin="0,10,0,0" FontSize="32" FontWeight="Bold"
+                       TextAlignment="Center"
+                       Foreground="#1A1D28"
+                       Text=""/>
+            <TextBlock x:Name="WrSubText"
+                       FontSize="11" Foreground="#555866"
+                       TextAlignment="Center"
+                       Text=""/>
+
+            <!-- Tiny footer link to open settings (low-key) -->
+            <TextBlock Margin="0,8,0,0" FontSize="10" Foreground="#888"
+                       TextAlignment="Center"
+                       x:Name="FooterText"
+                       Text=""/>
+        </StackPanel>
+    </Border>
+</Window>

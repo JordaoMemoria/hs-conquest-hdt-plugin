@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B0B7C2A1-1234-4567-8901-ABCDEF012345}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>HsConquest</RootNamespace>
+    <AssemblyName>HsConquestPlugin</AssemblyName>
+    <!--
+      HDT itself targets .NET Framework 4.7.2, so plugins must too. Plugins
+      compiled against newer/older frameworks won't load.
+    -->
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
+  <!--
+    HdtPath: where to find HDT's DLLs at build time.
+      - Local dev (Windows): defaults to the standard HDT install location.
+      - CI (GitHub Actions): the build workflow sets HdtPath to a temp dir
+        where the latest HDT release zip was extracted.
+    Override on the command line with:  msbuild /p:HdtPath="C:\path\to\HDT"
+  -->
+  <PropertyGroup>
+    <HdtPath Condition="'$(HdtPath)' == ''">$(LOCALAPPDATA)\Programs\HearthstoneDeckTracker</HdtPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+
+    <!--
+      HDT itself, plus its bundled deps. We reference the .exe as a DLL
+      (this is the standard pattern for HDT plugins — its public types
+      live in the executable). HearthDb provides card-name lookups; we
+      don't strictly need it for V1 but include it for future use.
+      Newtonsoft.Json is HDT's bundled JSON lib; we use it instead of
+      System.Text.Json (which isn't on .NET Framework 4.7.2 by default).
+    -->
+    <Reference Include="Hearthstone Deck Tracker">
+      <HintPath>$(HdtPath)\Hearthstone Deck Tracker.exe</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="HearthDb">
+      <HintPath>$(HdtPath)\HearthDb.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(HdtPath)\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="HsConquestPlugin.cs" />
+    <Compile Include="Settings.cs" />
+    <Compile Include="Matrix\MatrixData.cs" />
+    <Compile Include="Matrix\MatrixClient.cs" />
+    <Compile Include="UI\SettingsWindow.xaml.cs">
+      <DependentUpon>SettingsWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\MatchupOverlay.xaml.cs">
+      <DependentUpon>MatchupOverlay.xaml</DependentUpon>
+    </Compile>
+
+    <Page Include="UI\SettingsWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\MatchupOverlay.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

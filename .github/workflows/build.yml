@@ -1,0 +1,71 @@
+# Build the HDT plugin DLL on every push.
+#
+# The plugin links against HDT's own assemblies (Hearthstone Deck
+# Tracker.exe + HearthDb.dll + Newtonsoft.Json.dll), so we need a real
+# HDT install on the build agent. We grab the latest portable release
+# zip from HDT's GitHub Releases, extract it, and point the csproj at
+# the extracted folder via the HdtPath MSBuild property.
+#
+# Output: bin/Release/HsConquestPlugin.dll uploaded as an artifact named
+# "HsConquestPlugin". Download from the Actions tab → click the run →
+# scroll to "Artifacts".
+
+name: Build plugin DLL
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Download HDT portable zip
+        shell: pwsh
+        run: |
+          # Pull the latest release metadata, find the asset whose name
+          # contains "portable" (HDT publishes a portable zip alongside the
+          # installer). Falls back to the first .zip if naming changes.
+          $api = "https://api.github.com/repos/HearthSim/Hearthstone-Deck-Tracker/releases/latest"
+          $rel = Invoke-RestMethod -Uri $api -Headers @{ "User-Agent" = "ci-build" }
+          $asset = $rel.assets | Where-Object { $_.name -like "*portable*.zip" } | Select-Object -First 1
+          if (-not $asset) {
+            $asset = $rel.assets | Where-Object { $_.name -like "*.zip" } | Select-Object -First 1
+          }
+          if (-not $asset) {
+            throw "Could not find a portable HDT zip in latest release."
+          }
+          Write-Host "Downloading HDT asset: $($asset.name) ($($asset.browser_download_url))"
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile hdt.zip
+          Expand-Archive -Path hdt.zip -DestinationPath hdt -Force
+          # Some HDT zips nest content under a subfolder. Resolve so HdtPath
+          # points at the directory containing Hearthstone Deck Tracker.exe.
+          $exe = Get-ChildItem -Path hdt -Recurse -Filter "Hearthstone Deck Tracker.exe" | Select-Object -First 1
+          if (-not $exe) { throw "Hearthstone Deck Tracker.exe not found in extracted HDT." }
+          $hdtPath = $exe.Directory.FullName
+          Write-Host "Resolved HdtPath = $hdtPath"
+          "HDT_PATH=$hdtPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Build plugin (Release)
+        shell: pwsh
+        run: |
+          msbuild HsConquestPlugin.csproj `
+            /p:Configuration=Release `
+            /p:HdtPath="$env:HDT_PATH" `
+            /verbosity:minimal
+
+      - name: Upload plugin DLL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HsConquestPlugin
+          path: bin/Release/HsConquestPlugin.dll
+          if-no-files-found: error
+          retention-days: 30
