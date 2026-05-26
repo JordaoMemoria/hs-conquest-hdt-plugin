@@ -18,6 +18,14 @@ namespace HsConquest
     {
         public string SyncUrl { get; set; } = "";
 
+        // Overlay window state — persisted so the user's dragged position
+        // and collapsed/expanded preference survive HDT restarts. Nullable
+        // doubles for position so an unset value (first run) defers to the
+        // XAML default (Left=40, Top=120).
+        public double? OverlayLeft { get; set; }
+        public double? OverlayTop { get; set; }
+        public bool OverlayCollapsed { get; set; }
+
         // ---- Disk persistence ----
 
         public static string SettingsDirectory =>

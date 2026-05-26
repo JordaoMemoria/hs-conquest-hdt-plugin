@@ -10,46 +10,86 @@
         ShowInTaskbar="False"
         SizeToContent="WidthAndHeight"
         WindowStartupLocation="Manual"
-        Left="40" Top="120">
+        Left="40" Top="120"
+        MouseLeftButtonDown="OnWindowMouseDown">
     <!--
-        Borderless, transparent, always-on-top window. Positioned at
-        (40, 120) of the desktop by default. Two dropdowns: the user picks
-        their own archetype + the opponent's archetype in-game; WR
-        appears below both once they're set.
+        Borderless, transparent, always-on-top overlay. Three user controls:
+          - Drag: click and drag from any non-control area (the title bar is
+            the obvious affordance, but the body itself also drags).
+          - Minimize: collapses the body, leaving the title bar visible with
+            the current WR.
+          - Close: hides the overlay; reappears at next game start.
+        Position + collapsed state persist to settings.json.
     -->
-    <Border CornerRadius="10" Background="#FAFAFCEC" BorderBrush="#CFD3DA" BorderThickness="1" Padding="14,12">
+    <Border CornerRadius="10" Background="#FAFAFCEC" BorderBrush="#CFD3DA" BorderThickness="1">
         <Border.Effect>
             <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.18"/>
         </Border.Effect>
-        <StackPanel MinWidth="280">
-            <!-- Header: classes for both sides -->
-            <TextBlock x:Name="HeaderText"
-                       FontSize="11" Foreground="#555866" FontWeight="SemiBold"
-                       TextAlignment="Center"
-                       Text="? vs ?"/>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-            <!-- My-deck dropdown -->
-            <TextBlock Margin="0,8,0,2" FontSize="11" Foreground="#555866" Text="My deck"/>
-            <ComboBox x:Name="MyArchetypeBox"
-                      IsEditable="False"
-                      SelectionChanged="OnSelectionChanged"/>
+            <!-- Title bar: drag handle + tiny WR readout when collapsed + minimize + close -->
+            <Grid Grid.Row="0" Background="#EBEDF0" Height="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="HS Conquest" FontSize="11"
+                           FontWeight="SemiBold" Foreground="#555866"
+                           VerticalAlignment="Center" Margin="12,0,0,0"/>
+                <!-- Compact WR readout only visible when collapsed -->
+                <TextBlock Grid.Column="1" x:Name="CompactWrText"
+                           FontSize="12" FontWeight="Bold" Foreground="#1A1D28"
+                           VerticalAlignment="Center" Margin="0,0,8,0"
+                           Visibility="Collapsed"/>
+                <Button Grid.Column="2" x:Name="MinimizeButton" Content="—"
+                        Width="28" Height="24"
+                        Background="Transparent" BorderThickness="0"
+                        FontWeight="Bold" Foreground="#555866"
+                        Click="OnMinimizeClick" ToolTip="Minimize"/>
+                <Button Grid.Column="3" Content="✕"
+                        Width="28" Height="24"
+                        Background="Transparent" BorderThickness="0"
+                        FontWeight="Bold" Foreground="#A8233A"
+                        Click="OnCloseClick" ToolTip="Close (reappears next game)"/>
+            </Grid>
 
-            <!-- Opponent-deck dropdown -->
-            <TextBlock Margin="0,6,0,2" FontSize="11" Foreground="#555866" Text="Opponent's deck"/>
-            <ComboBox x:Name="OppArchetypeBox"
-                      IsEditable="False"
-                      SelectionChanged="OnSelectionChanged"/>
+            <!-- Body — hidden when minimized -->
+            <StackPanel Grid.Row="1" x:Name="BodyPanel" MinWidth="280" Margin="14,8,14,12">
+                <!-- Header: classes for both sides -->
+                <TextBlock x:Name="HeaderText"
+                           FontSize="11" Foreground="#555866" FontWeight="SemiBold"
+                           TextAlignment="Center"
+                           Text="? vs ?"/>
 
-            <!-- WR display (initially empty until both selected) -->
-            <TextBlock x:Name="WrText"
-                       Margin="0,12,0,0" FontSize="32" FontWeight="Bold"
-                       TextAlignment="Center"
-                       Foreground="#1A1D28"
-                       Text=""/>
-            <TextBlock x:Name="WrSubText"
-                       FontSize="11" Foreground="#555866"
-                       TextAlignment="Center"
-                       Text=""/>
-        </StackPanel>
+                <!-- My-deck dropdown -->
+                <TextBlock Margin="0,8,0,2" FontSize="11" Foreground="#555866" Text="My deck"/>
+                <ComboBox x:Name="MyArchetypeBox"
+                          IsEditable="False"
+                          SelectionChanged="OnSelectionChanged"/>
+
+                <!-- Opponent-deck dropdown -->
+                <TextBlock Margin="0,6,0,2" FontSize="11" Foreground="#555866" Text="Opponent's deck"/>
+                <ComboBox x:Name="OppArchetypeBox"
+                          IsEditable="False"
+                          SelectionChanged="OnSelectionChanged"/>
+
+                <!-- WR display (initially empty until both selected) -->
+                <TextBlock x:Name="WrText"
+                           Margin="0,12,0,0" FontSize="32" FontWeight="Bold"
+                           TextAlignment="Center"
+                           Foreground="#1A1D28"
+                           Text=""/>
+                <TextBlock x:Name="WrSubText"
+                           FontSize="11" Foreground="#555866"
+                           TextAlignment="Center"
+                           Text=""/>
+            </StackPanel>
+        </Grid>
     </Border>
 </Window>

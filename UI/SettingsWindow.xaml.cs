@@ -50,8 +50,12 @@ namespace HsConquest.UI
 
         private void OnSaveClick(object sender, RoutedEventArgs e)
         {
-            _settingsCopy.SyncUrl = UrlBox.Text.Trim();
-            _settingsCopy.SaveToDisk();
+            // Load fresh from disk so we don't clobber fields managed
+            // by the overlay (OverlayLeft / OverlayTop / OverlayCollapsed)
+            // — this window only edits SyncUrl.
+            var current = Settings.LoadFromDisk();
+            current.SyncUrl = UrlBox.Text.Trim();
+            current.SaveToDisk();
             DialogResult = true;
             Close();
         }
